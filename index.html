@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<title>Үнийн тооцоолуур</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  label, input { display: block; margin: 10px 0; }
+  input { padding: 5px; width: 200px; }
+  button { padding: 10px 20px; margin-top: 20px; }
+  .result { margin-top: 20px; font-weight: bold; }
+</style>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+// Мөнгөн дүнг таслалтай харуулах функц
+function formatNumber(num) {
+  return Number(num).toLocaleString('en-US');
+}
+
+function calculate() {
+  let base = parseFloat(document.getElementById("basePrice").value.replace(/,/g,'')) || 0;
+  let jpRate = 0.10;
+  let jpTax = base * jpRate;
+  let domestic = 40000;
+  let totalJP = base + jpTax + domestic;
+
+  let usdRate = parseFloat(document.getElementById("usdRate").value.replace(/,/g,'')) || 0;
+  let mntRate = parseFloat(document.getElementById("mntRate").value.replace(/,/g,'')) || 0;
+  let shippingUSD = 1200;
+  let shippingMNT = shippingUSD * usdRate;
+
+  let specialTax = parseFloat(document.getElementById("specialTax").value.replace(/,/g,'')) || 0;
+
+  let customsVAT = 0.155 * (totalJP * mntRate + shippingMNT + specialTax);
+  let total = (totalJP * mntRate) + shippingMNT + specialTax + customsVAT;
+
+  document.getElementById("result").innerHTML = `
+    Нийт япон дахь зардал: ${formatNumber(totalJP.toFixed(0))} JPY<br>
+    Нийт зардал MNT: ${formatNumber(Math.round(totalJP*mntRate))} MNT<br>
+    Тээврийн зардал: ${formatNumber(Math.round(shippingMNT))} MNT<br>
+    Гаалийн татвар + НӨАТ: ${formatNumber(Math.round(customsVAT))} MNT<br>
+    Нийт үнэ: ${formatNumber(Math.round(total))} MNT
+  `;
+}
+
+// Input дээр таслалтай харагдуулах
+document.addEventListener("DOMContentLoaded", function() {
+  ["basePrice", "mntRate", "usdRate", "specialTax"].forEach(id => {
+    const input = document.getElementById(id);
+    input.addEventListener("input", function(e) {
+      let value = e.target.value.replace(/,/g,'');
+      if(value) e.target.value = Number(value).toLocaleString('en-US');
+    });
+  });
+});
+</script>
+</head>
+<body>
+<h1>Үнийн тооцоолуур</h1>
+
+<label>Анхны үнэ (JPY):
+  <input type="text" id="basePrice" placeholder="0">
+</label>
+<label>JPY → MNT ханш:
+  <input type="text" id="mntRate" placeholder="0">
+</label>
+<label>USD → MNT ханш:
+  <input type="text" id="usdRate" placeholder="0">
+</label>
+<label>Онцгой албан татвар (MNT):
+  <input type="text" id="specialTax" placeholder="0">
+</label>
+
+<button onclick="calculate()">Тооцоо хийх</button>
+
+<div class="result" id="result"></div>
+</body>
+</html>

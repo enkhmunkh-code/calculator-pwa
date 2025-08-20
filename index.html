@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Машины үнийн тооцоолуур</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
+  header { background: #bc002d; color: #fff; text-align: center; padding: 20px; font-size: 24px; font-weight: bold; }
+  main { max-width: 900px; margin: auto; padding: 20px; }
+  label { display: block; margin-top: 10px; font-weight: bold; }
+  input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; }
+  button { margin-top: 15px; padding: 12px 20px; font-size: 16px; cursor: pointer; background: #bc002d; color: #fff; border: none; border-radius: 5px; }
+  button:hover { background: #e60033; }
+  .result-card { background: #fff; padding: 15px; border-radius: 8px; margin-top: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+  .result-card p { margin: 5px 0; }
+  .highlight { font-weight: bold; color: #bc002d; font-size: 18px; }
+</style>
+</head>
+<body>
+
+<header>Машины үнийн тооцоолуур 🇯🇵</header>
+
+<main>
+  <label>1. Дуудлага худалдааны анхны үнэ (JPY):</label>
+  <input type="number" id="initialPrice" placeholder="Жишээ: 500000">
+
+  <label>JPY → MNT ханш:</label>
+  <input type="number" id="jpyRate" placeholder="Жишээ: 25">
+
+  <label>USD → MNT ханш:</label>
+  <input type="number" id="usdRate" placeholder="Жишээ: 3500">
+
+  <label>Машины үйлдвэрлэсэн он:</label>
+  <select id="year">
+    <option value="">Сонгоно уу</option>
+  </select>
+
+  <label>Хөдөлгүүрийн төрөл:</label>
+  <select id="engineType">
+    <option value="">Сонгоно уу</option>
+    <option value="normal">Бензин/Дизель</option>
+    <option value="hybrid">Hybrid / Газ</option>
+  </select>
+
+  <label>Хөдөлгүүрийн багтаамж (cc):</label>
+  <input type="number" id="engineCC" placeholder="Жишээ: 1800">
+
+  <button id="calculateBtn">Тооцоолох</button>
+
+  <div class="result-card">
+    <p>Япон татвар (10%): <span id="jpTax">0 ¥</span></p>
+    <p>Дотоод зардал: 40,000 ¥</p>
+    <p>Нийт Япон дахь зардал: <span id="jpTotal">0 ¥</span></p>
+    <p>Нийт зардал MNT: <span id="mntTotal">0 ₮</span></p>
+    <p>Тээврийн зардал: <span id="shipping">0 ₮</span></p>
+    <p>Онцгой албан татвар: <span id="excise">0 ₮</span></p>
+    <p>Гааль + НӨАТ (15.5%): <span id="taxVat">0 ₮</span></p>
+    <p class="highlight">Нийт үнэ: <span id="grandTotal">0 ₮</span></p>
+  </div>
+</main>
+
+<script>
+  const yearSelect = document.getElementById("year");
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear; y >= 2000; y--) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.innerText = y;
+    yearSelect.appendChild(opt);
+  }
+
+  const exciseTable = {
+    normal: [
+      { max: 1500, values: [750000, 1600000, 3350000, 10000000] },
+      { max: 2500, values: [2300000, 3200000, 5000000, 11700000] },
+      { max: 3500, values: [3050000, 4000000, 6700000, 13350000] },
+      { max: 4500, values: [6850000, 8000000, 10850000, 17500000] },
+      { max: Infinity, values: [14210000, 27200000, 39150000, 65975000] }
+    ],
+    hybrid: [
+      { max: 1500, values: [375000, 800000, 1675000, 5000000] },
+      { max: 2500, values: [1150000, 1600000, 2500000, 5850000] },
+      { max: 3500, values: [1525000, 2000000, 3350000, 6675000] },
+      { max: 4500, values: [3425375, 4000000, 5425000, 8750000] },
+      { max: Infinity, values: [7105000, 13600000, 19575000, 32987500] }
+    ]
+  };
+
+  function formatNumber(num) {
+    return num.toLocaleString("mn-MN");
+  }
+
+  function calculate() {
+    const initialPrice = Number(document.getElementById("initialPrice").value);
+    const jpyRate = Number(document.getElementById("jpyRate").value);
+    const usdRate = Number(document.getElementById("usdRate").value);
+    const year = document.getElementById("year").value;
+    const engineType = document.getElementById("engineType").value;
+    const engineCC = Number(document.getElementById("engineCC").value);
+
+    if (!initialPrice || !jpyRate || !usdRate || !year || !engineType || !engineCC) {
+      alert("Бүх талбарыг бөглөнө үү!");
+      return;
+    }
+
+    const jpTax = initialPrice * 0.1;
+    document.getElementById("jpTax").innerText = formatNumber(jpTax) + " ¥";
+
+    const jpTotal = initialPrice + jpTax + 40000;
+    document.getElementById("jpTotal").innerText = formatNumber(jpTotal) + " ¥";
+
+    const mntTotal = jpTotal * jpyRate;
+    document.getElementById("mntTotal").innerText = formatNumber(mntTotal) + " ₮";
+
+    const shipping = 1200 * usdRate;
+    document.getElementById("shipping").innerText = formatNumber(shipping) + " ₮";
+
+    let excise = 0;
+    const age = currentYear - year;
+    let col = age <= 3 ? 0 : age <= 6 ? 1 : age <= 9 ? 2 : 3;
+    const table = exciseTable[engineType];
+    for (let row of table) {
+      if (engineCC <= row.max) { excise = row.values[col]; break; }
+    }
+    document.getElementById("excise").innerText = formatNumber(excise) + " ₮";
+
+    const taxVat = (mntTotal + shipping + excise) * 0.155;
+    document.getElementById("taxVat").innerText = formatNumber(taxVat) + " ₮";
+
+    const grandTotal = mntTotal + shipping + excise + taxVat;
+    document.getElementById("grandTotal").innerText = formatNumber(grandTotal) + " ₮";
+  }
+
+  document.getElementById("calculateBtn").addEventListener("click", calculate);
+</script>
+
+</body>
+</html>
